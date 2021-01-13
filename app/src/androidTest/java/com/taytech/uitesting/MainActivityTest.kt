@@ -9,7 +9,6 @@ import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import org.junit.Test
 
-//MainActivity test class
 class MainActivityTest {
 
     //test to check button click navigates to second activity
