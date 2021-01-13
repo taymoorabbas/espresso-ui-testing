@@ -1,61 +1,62 @@
 package com.taytech.uitesting
 
 import androidx.test.core.app.ActivityScenario
+import androidx.test.espresso.Espresso
 import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.ViewMatchers.*
+import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
+import androidx.test.espresso.matcher.ViewMatchers.withId
 import org.junit.Test
 
 //MainActivity test class
 class MainActivityTest {
 
-    //these tests are run in alphabetical order
-
-    //test to check if the activity is launched and displayed successfully
+    //test to check button click navigates to second activity
     @Test
-    fun test_isActivityInView() {
+    fun test_buttonNavigatingToSecondActivity() {
 
-        //launch function launches the activity
+        //simulation of main activity launch (sand boxed)
         ActivityScenario.launch(MainActivity::class.java)
 
-        //checking if the main activity is being displayed
+        //checking if mainActivity is displayed
         onView(withId(R.id.activity_main))
                 .check(matches(isDisplayed()))
-    }
 
-    //test to check if the title of the main activity is being displayed
-    @Test
-    fun test_visibilityTitle() {
-
-        //launching the main activity
-        ActivityScenario.launch(MainActivity::class.java)
-
-        //checking if main title is being displayed
-        onView(withId(R.id.text_view_main_title))
-                .check(matches(isDisplayed()))
-    }
-
-    //test to check if the next button is being displayed
-    @Test
-    fun test_visibilityNextButton() {
-
-        //launching the main activity
-        ActivityScenario.launch(MainActivity::class.java)
-
-        //checking
+        //triggering a nextButton click
         onView(withId(R.id.button_next_activity))
+                .perform(click())
+
+        //now checking if the second activity is displayed (as a result of button click)
+        onView(withId(R.id.activity_second))
                 .check(matches(isDisplayed()))
     }
 
-    //test to check if the main title says "Main Activity"
+    //test to check if back press navigates to main activity
+    //notice the flow!
     @Test
-    fun test_isTitleTextCorrect() {
+    fun test_backPressedFromSecondActivity() {
 
-        //launching the main activity
+        //simulating a main activity launch
         ActivityScenario.launch(MainActivity::class.java)
 
-        //checking the title text
-        onView(withId(R.id.text_view_main_title))
-                .check(matches(withText(R.string.text_main_activity)))
+        //checking if mainActivity is displayed (optional)
+        onView(withId(R.id.activity_main))
+                .check(matches(isDisplayed()))
+
+        //simulating a button click to goto secondActivity
+        onView(withId(R.id.button_next_activity))
+                .perform(click())
+
+        //checking if the second activity is displayed (optional)
+        onView(withId(R.id.activity_second))
+                .check(matches(isDisplayed()))
+
+        //simulating a back press
+        Espresso.pressBack()
+
+        //checking if main activity is being displayed
+        onView(withId(R.id.activity_main))
+                .check(matches(isDisplayed()))
     }
 }

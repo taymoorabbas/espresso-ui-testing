@@ -1,49 +1,40 @@
 package com.taytech.uitesting
 
+import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.ViewMatchers.*
-import androidx.test.ext.junit.rules.ActivityScenarioRule
-import org.junit.Rule
+import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
+import androidx.test.espresso.matcher.ViewMatchers.withId
 import org.junit.Test
 
 class SecondActivityTest {
 
-    //rules to apply across all test cases
-    //this rule states to create secondActivity class before each test
-    @get: Rule
-    val activityRule = ActivityScenarioRule(SecondActivity::class.java)
-
-    //test to check if the second activity is displayed
+    //test to check if button click navigates to main activity
     @Test
-    fun test_isActivityDisplayed() {
+    fun test_backButtonNavigatingToMainActivity() {
 
+        //simulating a main activity launch
+        ActivityScenario.launch(MainActivity::class.java)
+
+        //checking if mainActivity is displayed (optional)
+        onView(withId(R.id.activity_main))
+                .check(matches(isDisplayed()))
+
+        //simulating a button click to goto secondActivity
+        onView(withId(R.id.button_next_activity))
+                .perform(click())
+
+        //checking if the second activity is displayed (optional)
         onView(withId(R.id.activity_second))
                 .check(matches(isDisplayed()))
-    }
 
-    //test to check if the title is being displayed
-    @Test
-    fun test_visibilityTitle() {
-
-        onView(withId(R.id.text_view_second_title))
-                .check(matches(isDisplayed()))
-    }
-
-    //test to check if the back button is being displayed
-    @Test
-    fun test_visibilityBackButton() {
-
-        //alternative way to check visibility
+        //simulating a back press
         onView(withId(R.id.button_back))
-                .check(matches(withEffectiveVisibility(Visibility.VISIBLE)))
-    }
+                .perform(click())
 
-    //test to check if the title says "Second Activity"
-    @Test
-    fun test_isTitleTextCorrect(){
-
-        onView(withId(R.id.text_view_second_title))
-                .check(matches(withText(R.string.text_secondary_activity)))
+        //checking if main activity is being displayed
+        onView(withId(R.id.activity_main))
+                .check(matches(isDisplayed()))
     }
 }
