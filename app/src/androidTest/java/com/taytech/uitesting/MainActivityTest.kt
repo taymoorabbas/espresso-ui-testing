@@ -1,83 +1,61 @@
 package com.taytech.uitesting
 
-import android.app.Activity.RESULT_OK
-import android.app.Instrumentation
-import android.content.Intent
-import android.graphics.BitmapFactory
-import android.os.Bundle
-import android.provider.MediaStore
+import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.action.ViewActions.typeText
+import androidx.test.espresso.assertion.ViewAssertions.doesNotExist
 import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.intent.Intents.intending
-import androidx.test.espresso.intent.matcher.IntentMatchers.hasAction
-import androidx.test.espresso.intent.rule.IntentsTestRule
-import androidx.test.espresso.matcher.ViewMatchers.withId
-import org.hamcrest.Matcher
-import org.hamcrest.Matchers.not
-import org.junit.Rule
+import androidx.test.espresso.matcher.ViewMatchers.*
+import org.hamcrest.CoreMatchers.not
 import org.junit.Test
 
-
-@Suppress("DEPRECATION")
 class MainActivityTest {
 
-    @get:Rule
-    val intentsRule = IntentsTestRule(MainActivity::class.java)
-
-    //test to check camera intent. (must for intents)
-    //and to verify the onActivityResult gets a image from camera and displays it in imageView
+    //test to check the popup dialog is showing and it captures the name entered by user
     @Test
-    fun test_cameraIntent_isBitmapSetToImageView() {
+    fun test_showDialog_captureNameInput() {
 
-        //create a mock activityResult object
-        val activityResult = createImageCaptureActivityStub()
+        //launching the main activity
+        ActivityScenario.launch(MainActivity::class.java)
 
-        //creating a mock intent compare its result with the mock activityResult object
-        val expectedIntent: Matcher<Intent> = hasAction(MediaStore.ACTION_IMAGE_CAPTURE)
+        //test data to be entered in input dialog
+        val expectedName = "Badshah Sarkar"
 
-        //launching the fake intent for response
-        intending(expectedIntent)
-                .respondWith(activityResult)
-
-        //making sure that image view has no image set before intent launch
-        //using CUSTOM MATCHER
-        onView(withId(R.id.image))
-                .check(matches(not(ImageViewDrawableMatcher.hasDrawable())))
-
-        //simulating a click on launch camera intent button
-        onView(withId(R.id.button_launch_camera))
+        //simulate a open input dialog button
+        onView(withId(R.id.button_launch_dialog))
                 .perform(click())
 
-        //verifying the intent launch after button click
-        intending(expectedIntent)
+        //checking if the popup dialog is shown
+        onView(withText(R.string.text_enter_name))
+                .check(matches(isDisplayed()))
 
-        //now making sure that image view has image set from camera intent
-        //using CUSTOM MATCHER
-        onView(withId(R.id.image))
-                .check(matches(ImageViewDrawableMatcher.hasDrawable()))
+        //simulating a ok button click on empty input
+        //the dialog should not close if the input is empty
+        onView(withText(R.string.text_ok))
+                .perform(click())
+
+        //checking if dialog is still visible or not
+        //(after clicking ok on a empty input)
+        onView(withText(R.string.text_enter_name))
+                .check(matches(isDisplayed()))
+
+        //entering name in the input dialog
+        //('md_input_message' is default id of material input)
+        onView(withId(R.id.md_input_message))
+                .perform(typeText(expectedName))
+
+        //simulating the ok button click with input text filled
+        onView(withText(R.string.text_ok))
+                .perform(click())
+
+        //checking if the popup has been closed
+        onView(withText(R.string.text_enter_name))
+                .check(doesNotExist())
+
+        //checking if the entered name is displayed on text view
+        onView(withId(R.id.text_name))
+                .check(matches(withText(expectedName)))
     }
 
-    //function to mock a activityResult object with dummy data
-    private fun createImageCaptureActivityStub(): Instrumentation.ActivityResult {
-
-        //creating the bundle to store expected intent data
-        val bundle = Bundle()
-        bundle.putParcelable(
-
-                KEY_IMAGE_DATA,
-                BitmapFactory.decodeResource(
-
-                        intentsRule.activity.resources,
-                        R.drawable.ic_launcher_background
-                )
-        )
-
-        //creating an mock intent with our dummy camera data
-        val resultData = Intent()
-        resultData.putExtras(bundle)
-
-        //return the mock activityResult object
-        return Instrumentation.ActivityResult(RESULT_OK, resultData)
-    }
 }
