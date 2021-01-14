@@ -1,142 +1,83 @@
 package com.taytech.uitesting
 
-import android.content.Context
-import androidx.test.core.app.ApplicationProvider
-import androidx.test.espresso.Espresso
-import androidx.test.espresso.action.ViewActions.*
+import android.app.Activity.RESULT_OK
+import android.app.Instrumentation
+import android.content.Intent
+import android.graphics.BitmapFactory
+import android.os.Bundle
+import android.provider.MediaStore
+import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.ViewMatchers.*
-import androidx.test.ext.junit.rules.ActivityScenarioRule
-import org.hamcrest.CoreMatchers.not
-import org.junit.Before
+import androidx.test.espresso.intent.Intents.intending
+import androidx.test.espresso.intent.matcher.IntentMatchers.hasAction
+import androidx.test.espresso.intent.rule.IntentsTestRule
+import androidx.test.espresso.matcher.ViewMatchers.withId
+import org.hamcrest.Matcher
+import org.hamcrest.Matchers.not
 import org.junit.Rule
 import org.junit.Test
 
 
+@Suppress("DEPRECATION")
 class MainActivityTest {
-    // A valid string with a valid ending
-    private var stringTypedEndingWithCoffee: String? = null
 
-    // A valid string from the coffee preparations
-    private var stringTypedWithValidName: String? = null
+    @get:Rule
+    val intentsRule = IntentsTestRule(MainActivity::class.java)
 
-    private var stringTypeInvalid: String? = null
-
-    @get: Rule
-    val activityScenarioRule:
-            ActivityScenarioRule<MainActivity> = ActivityScenarioRule(MainActivity::class.java)
-
-    //initialize valid test data. this will run before any test case
-    @Before
-    fun initValidStrings() {
-
-        // Produce a string with valid ending.
-        //ie. Random coffee
-        stringTypedEndingWithCoffee = "Random " + MainActivity.VALID_ENDING
-
-        // Get one of the available coffee preparations.
-        //ie. Espresso, Latte
-        stringTypedWithValidName = MainActivity.COFFEE_PREPARATIONS[0]
-
-        //invalid name
-        //it can be anything. ie. Coca Cola
-        stringTypeInvalid = "Doodh Soda"
-    }
-
-    //test to check the hint text is being shown in the edit text
+    //test to check camera intent. (must for intents)
+    //and to verify the onActivityResult gets a image from camera and displays it in imageView
     @Test
-    fun hint_isDisplayedInEditText() {
+    fun test_cameraIntent_isBitmapSetToImageView() {
 
-        //getting the hint string from res
-        val hintText = ApplicationProvider
-                .getApplicationContext<Context>()
-                .resources
-                .getString(R.string.hint)
+        //create a mock activityResult object
+        val activityResult = createImageCaptureActivityStub()
 
-        //validating the hint is same as in the res
-        Espresso.onView(withId(R.id.editText))
-                .check(matches(withHint(hintText)))
-    }
+        //creating a mock intent compare its result with the mock activityResult object
+        val expectedIntent: Matcher<Intent> = hasAction(MediaStore.ACTION_IMAGE_CAPTURE)
 
-    //test to check if edit text is editable and then verifying the typed text
-    @Test
-    fun editText_canBeTypedInto() {
+        //launching the fake intent for response
+        intending(expectedIntent)
+                .respondWith(activityResult)
 
-        //entering a valid coffee name in edit text,
-        //closing the keyboard
-        //and then verifying the text
-        Espresso.onView(withId(R.id.editText))
-                .perform(typeText(stringTypedWithValidName), closeSoftKeyboard())
-                .check(matches(withText(stringTypedWithValidName)))
-    }
+        //making sure that image view has no image set before intent launch
+        //using CUSTOM MATCHER
+        onView(withId(R.id.image))
+                .check(matches(not(ImageViewDrawableMatcher.hasDrawable())))
 
-    //test to check that correct message is displayed after entering a valid coffee name
-    //ie. Latte
-    @Test
-    fun validation_resultIsOneOfTheValidStrings() {
-
-        //typing a valid coffee name in edit text
-        Espresso.onView(withId(R.id.editText))
-                .perform(typeText(stringTypedWithValidName), closeSoftKeyboard())
-
-        //clicking on validate button after typing the coffee name
-        Espresso.onView(withId(R.id.button)).perform(click())
-
-        //check that the correct sign is displayed
-        Espresso.onView(withId(R.id.inputValidationSuccess))
-                .check(matches(isDisplayed()))
-
-        //check that the incorrect sign is not displayed
-        Espresso.onView(withId(R.id.inputValidationError))
-                .check(matches(not(isDisplayed())))
-    }
-
-    //test to check that correct message is displayed after
-    //entering a random name ending with 'coffee'
-    //ie. Hot coffee
-    @Test
-    fun validation_resultHasCorrectEnding() {
-
-        //type any name ending with 'coffee' in edit text
-        Espresso.onView(withId(R.id.editText))
-                .perform(typeText(
-                        stringTypedEndingWithCoffee),
-                        closeSoftKeyboard())
-
-        //perform the validate button click
-        Espresso.onView(withId(R.id.button))
+        //simulating a click on launch camera intent button
+        onView(withId(R.id.button_launch_camera))
                 .perform(click())
 
-        //check that the correct sign is displayed
-        Espresso.onView(withId(R.id.inputValidationSuccess))
-                .check(matches(isDisplayed()))
+        //verifying the intent launch after button click
+        intending(expectedIntent)
 
-        //check that the incorrect sign is not displayed
-        Espresso.onView(withId(R.id.inputValidationError))
-                .check(matches(not(isDisplayed())))
+        //now making sure that image view has image set from camera intent
+        //using CUSTOM MATCHER
+        onView(withId(R.id.image))
+                .check(matches(ImageViewDrawableMatcher.hasDrawable()))
     }
 
-    //test to check that incorrect message is displayed after entering a invalid coffee name
-    //ie. Coca cola
-    @Test
-    fun validation_resultIsIncorrect() {
+    //function to mock a activityResult object with dummy data
+    private fun createImageCaptureActivityStub(): Instrumentation.ActivityResult {
 
-        //Type a invalid string in the edit text
-        Espresso.onView(withId(R.id.editText))
-                .perform(typeText(
-                        stringTypeInvalid),
-                        closeSoftKeyboard())
+        //creating the bundle to store expected intent data
+        val bundle = Bundle()
+        bundle.putParcelable(
 
-        //click on the validate button after typing
-        Espresso.onView(withId(R.id.button))
-                .perform(click())
+                KEY_IMAGE_DATA,
+                BitmapFactory.decodeResource(
 
-        //Check that the correct sign is displayed
-        Espresso.onView(withId(R.id.inputValidationError))
-                .check(matches(isDisplayed()))
+                        intentsRule.activity.resources,
+                        R.drawable.ic_launcher_background
+                )
+        )
 
-        //Check that the incorrect sign is not displayed
-        Espresso.onView(withId(R.id.inputValidationSuccess))
-                .check(matches(not(isDisplayed())))
+        //creating an mock intent with our dummy camera data
+        val resultData = Intent()
+        resultData.putExtras(bundle)
+
+        //return the mock activityResult object
+        return Instrumentation.ActivityResult(RESULT_OK, resultData)
     }
 }
