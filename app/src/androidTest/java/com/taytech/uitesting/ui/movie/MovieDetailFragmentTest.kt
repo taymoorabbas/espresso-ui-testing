@@ -24,7 +24,7 @@ class MovieDetailFragmentTest {
         bundle.putInt("movie_id", movie.id)
 
         //simulating the movie fragment transaction
-        val scenario = launchFragmentInContainer<MovieDetailFragment>(
+        launchFragmentInContainer<MovieDetailFragment>(
 
                 fragmentArgs = bundle,
                 factory = fragmentFactory
