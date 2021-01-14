@@ -1,86 +1,142 @@
 package com.taytech.uitesting
 
-import android.app.Activity.RESULT_OK
-import android.app.Instrumentation
-import android.content.ContentResolver
-import android.content.Intent
-import android.content.res.Resources
-import android.net.Uri
-import android.provider.MediaStore
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.action.ViewActions.click
-import androidx.test.espresso.intent.Intents.intended
-import androidx.test.espresso.intent.Intents.intending
-import androidx.test.espresso.intent.matcher.IntentMatchers.hasAction
-import androidx.test.espresso.intent.matcher.IntentMatchers.hasData
-import androidx.test.espresso.intent.rule.IntentsTestRule
-import androidx.test.espresso.matcher.ViewMatchers.withId
-import androidx.test.platform.app.InstrumentationRegistry
-import org.hamcrest.Matcher
-import org.hamcrest.Matchers.allOf
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.espresso.Espresso
+import androidx.test.espresso.action.ViewActions.*
+import androidx.test.espresso.assertion.ViewAssertions.matches
+import androidx.test.espresso.matcher.ViewMatchers.*
+import androidx.test.ext.junit.rules.ActivityScenarioRule
+import org.hamcrest.CoreMatchers.not
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
-@Suppress("DEPRECATION")
+
 class MainActivityTest {
+    // A valid string with a valid ending
+    private var stringTypedEndingWithCoffee: String? = null
 
-    //when we are testing intents, this rule is necessary
+    // A valid string from the coffee preparations
+    private var stringTypedWithValidName: String? = null
+
+    private var stringTypeInvalid: String? = null
+
     @get: Rule
-    val intentsTestRule = IntentsTestRule(MainActivity::class.java)
+    val activityScenarioRule:
+            ActivityScenarioRule<MainActivity> = ActivityScenarioRule(MainActivity::class.java)
 
-    //test to check if the intent we are creating is sent to pick image from gallery
-    //since this image will be loaded from the memory,
-    //we cannot compare it with some sample image in our test.
-    //that would be a different test.
-    // ie checking whether a logo image is there as it should be (comparing)
-    @Test
-    fun test_validateIntentSentToPickImage() {
+    //initialize valid test data. this will run before any test case
+    @Before
+    fun initValidStrings() {
 
-        //creating a mock intent similar to that in our main activity
-        val expectedIntent: Matcher<Intent> = allOf(
+        // Produce a string with valid ending.
+        //ie. Random coffee
+        stringTypedEndingWithCoffee = "Random " + MainActivity.VALID_ENDING
 
-                hasAction(Intent.ACTION_PICK),
-                hasData(MediaStore.Images.Media.EXTERNAL_CONTENT_URI),
-//                hasExtra("key", 2) //optional if your intent has extras
-        )
+        // Get one of the available coffee preparations.
+        //ie. Espresso, Latte
+        stringTypedWithValidName = MainActivity.COFFEE_PREPARATIONS[0]
 
-        //creating the mock activity result for gallery intent
-        val activityResult = createGalleryPickActivityResultStub()
-
-        //launching the mock intent for result
-        //alternative: use intended to just start the intent without expecting result
-        intending(expectedIntent).respondWith(activityResult)
-
-        //verifying that the expected intent was launched at button click
-        onView(withId(R.id.button_open_gallery)).perform(click())
-        intended(expectedIntent)
+        //invalid name
+        //it can be anything. ie. Coca Cola
+        stringTypeInvalid = "Doodh Soda"
     }
 
-    //this method returns a mock of expected activity result of our gallery intent
-    private fun createGalleryPickActivityResultStub(): Instrumentation.ActivityResult {
+    //test to check the hint text is being shown in the edit text
+    @Test
+    fun hint_isDisplayedInEditText() {
 
-        //getting a sample image to test our intent
-        //note: we are not comparing images.
-        // we are just ensuring that the result would be a image URI
-        //note: only get an image which is guaranteed to be present in the project
-        // and the device where the tests would be run. otherwise test would fail
+        //getting the hint string from res
+        val hintText = ApplicationProvider
+                .getApplicationContext<Context>()
+                .resources
+                .getString(R.string.hint)
 
-        //getting the context
-        val resources: Resources = InstrumentationRegistry.getInstrumentation().context.resources
+        //validating the hint is same as in the res
+        Espresso.onView(withId(R.id.editText))
+                .check(matches(withHint(hintText)))
+    }
 
-        //here we are getting the ic_launcher_background image
-        //because it is guaranteed to be present in all projects
-        val imageUri = Uri.parse(
-                ContentResolver.SCHEME_ANDROID_RESOURCE + "://" +
-                        resources.getResourcePackageName(R.drawable.ic_launcher_background) + "/" +
-                        resources.getResourceTypeName(R.drawable.ic_launcher_background) + "/" +
-                        resources.getResourceEntryName(R.drawable.ic_launcher_background))
+    //test to check if edit text is editable and then verifying the typed text
+    @Test
+    fun editText_canBeTypedInto() {
 
-        //create the mock intent with image uri
-        val resultIntent = Intent()
-        resultIntent.data = imageUri
+        //entering a valid coffee name in edit text,
+        //closing the keyboard
+        //and then verifying the text
+        Espresso.onView(withId(R.id.editText))
+                .perform(typeText(stringTypedWithValidName), closeSoftKeyboard())
+                .check(matches(withText(stringTypedWithValidName)))
+    }
 
-        //returning a mock activity result
-        return Instrumentation.ActivityResult(RESULT_OK, resultIntent)
+    //test to check that correct message is displayed after entering a valid coffee name
+    //ie. Latte
+    @Test
+    fun validation_resultIsOneOfTheValidStrings() {
+
+        //typing a valid coffee name in edit text
+        Espresso.onView(withId(R.id.editText))
+                .perform(typeText(stringTypedWithValidName), closeSoftKeyboard())
+
+        //clicking on validate button after typing the coffee name
+        Espresso.onView(withId(R.id.button)).perform(click())
+
+        //check that the correct sign is displayed
+        Espresso.onView(withId(R.id.inputValidationSuccess))
+                .check(matches(isDisplayed()))
+
+        //check that the incorrect sign is not displayed
+        Espresso.onView(withId(R.id.inputValidationError))
+                .check(matches(not(isDisplayed())))
+    }
+
+    //test to check that correct message is displayed after
+    //entering a random name ending with 'coffee'
+    //ie. Hot coffee
+    @Test
+    fun validation_resultHasCorrectEnding() {
+
+        //type any name ending with 'coffee' in edit text
+        Espresso.onView(withId(R.id.editText))
+                .perform(typeText(
+                        stringTypedEndingWithCoffee),
+                        closeSoftKeyboard())
+
+        //perform the validate button click
+        Espresso.onView(withId(R.id.button))
+                .perform(click())
+
+        //check that the correct sign is displayed
+        Espresso.onView(withId(R.id.inputValidationSuccess))
+                .check(matches(isDisplayed()))
+
+        //check that the incorrect sign is not displayed
+        Espresso.onView(withId(R.id.inputValidationError))
+                .check(matches(not(isDisplayed())))
+    }
+
+    //test to check that incorrect message is displayed after entering a invalid coffee name
+    //ie. Coca cola
+    @Test
+    fun validation_resultIsIncorrect() {
+
+        //Type a invalid string in the edit text
+        Espresso.onView(withId(R.id.editText))
+                .perform(typeText(
+                        stringTypeInvalid),
+                        closeSoftKeyboard())
+
+        //click on the validate button after typing
+        Espresso.onView(withId(R.id.button))
+                .perform(click())
+
+        //Check that the correct sign is displayed
+        Espresso.onView(withId(R.id.inputValidationError))
+                .check(matches(isDisplayed()))
+
+        //Check that the incorrect sign is not displayed
+        Espresso.onView(withId(R.id.inputValidationSuccess))
+                .check(matches(not(isDisplayed())))
     }
 }

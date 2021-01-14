@@ -1,52 +1,65 @@
 package com.taytech.uitesting
 
 import android.app.Activity
-import android.content.Intent
 import android.os.Bundle
-import android.provider.MediaStore
-import android.util.Log
-import androidx.appcompat.app.AppCompatActivity
-import com.bumptech.glide.Glide
-import kotlinx.android.synthetic.main.activity_main.*
+import android.view.View
+import android.widget.EditText
+import androidx.annotation.VisibleForTesting
+import java.util.*
 
-const val GALLERY_REQUEST_CODE = 1234
+class MainActivity : Activity(), View.OnClickListener {
 
-class MainActivity : AppCompatActivity() {
-
-    private val TAG: String = "AppDebug"
+    private var mInputText: EditText? = null
+    private var mSuccessView: View? = null
+    private var mErrorView: View? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        button_open_gallery.setOnClickListener {
-            pickFromGallery()
+        // Sets the listener for the button.
+        findViewById<View>(R.id.button).setOnClickListener(this)
+
+        // Get references to the EditText and views showing the result.
+        mInputText = findViewById<View>(R.id.editText) as EditText
+        mSuccessView = findViewById(R.id.inputValidationSuccess)
+        mErrorView = findViewById(R.id.inputValidationError)
+    }
+
+    override fun onClick(view: View) {
+        if (view.id == R.id.button) {
+            // The View to display depends on whether the input is valid or not.
+            val inputText = mInputText!!.text.toString()
+
+            // Validate the input and show the result.
+            showResult(validateText(inputText))
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode == Activity.RESULT_OK) {
-            Log.d(TAG, "RESULT_OK")
-            when (requestCode) {
+    private fun showResult(isValidResult: Boolean) {
+        mSuccessView!!.visibility = if (isValidResult) View.VISIBLE else View.GONE
+        mErrorView!!.visibility = if (isValidResult) View.GONE else View.VISIBLE
+    }
 
-                GALLERY_REQUEST_CODE -> {
-                    Log.d(TAG, "GALLERY_REQUEST_CODE detected.")
-                    data?.data?.let { uri ->
-                        Log.d(TAG, "URI: $uri")
-                        Glide.with(this)
-                                .load(uri)
-                                .into(image)
-                    }
+    companion object {
+        @VisibleForTesting
+        val COFFEE_PREPARATIONS = Arrays.asList("Espresso", "Latte", "Mocha", "Café con leche", "Cold brew")
+
+        @VisibleForTesting
+        val VALID_ENDING = "coffee"
+        private fun validateText(inputText: String): Boolean {
+            // Every input ending in VALID_ENDING will return true.
+            if (inputText.toLowerCase().endsWith(VALID_ENDING)) {
+                return true
+            }
+
+            // Check if the string is in the list.
+            for (preparation in COFFEE_PREPARATIONS) {
+                if (preparation.equals(inputText, ignoreCase = true)) {
+                    return true
                 }
             }
+            return false
         }
-    }
-
-    private fun pickFromGallery() {
-
-        //we are going to get an external content uri (image) from this intent
-        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-        startActivityForResult(intent, GALLERY_REQUEST_CODE)
     }
 }
