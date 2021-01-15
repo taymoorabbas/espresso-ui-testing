@@ -2,6 +2,7 @@ package com.taytech.uitesting.ui.movie
 
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.Espresso.pressBack
+import androidx.test.espresso.IdlingRegistry
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.contrib.RecyclerViewActions.*
@@ -11,6 +12,9 @@ import androidx.test.internal.runner.junit4.AndroidJUnit4ClassRunner
 import com.taytech.uitesting.R
 import com.taytech.uitesting.data.FakeMovieData
 import com.taytech.uitesting.ui.movie.MoviesListAdapter.*
+import com.taytech.uitesting.util.MyEspressoIdlingResource
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
@@ -27,6 +31,25 @@ class MovieListFragmentTest {
     val LIST_ITEM_IN_TEST = 4
     val MOVIE_IN_TEST = FakeMovieData.movies[LIST_ITEM_IN_TEST]
 
+    //we need to register our countingIdleResource
+    //before every test so tests can wait so that time delayed tasks can be executed
+    //test will check if there is any time delayed task executing
+    @Before
+    fun registerIdlingResource() {
+
+        IdlingRegistry
+                .getInstance()
+                .register(MyEspressoIdlingResource.countingIdlingResource)
+    }
+
+    //unregistering our countingIdleResource after test have completed
+    @After
+    fun unRegisterIdlingResource() {
+
+        IdlingRegistry
+                .getInstance()
+                .unregister(MyEspressoIdlingResource.countingIdlingResource)
+    }
 
     /*
    * RecyclerView comes into view
