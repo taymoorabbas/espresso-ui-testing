@@ -58,7 +58,7 @@ class MovieDetailFragmentTest {
         )
 
         // VERIFY
-        onView(withId(R.id.movie_title))
+        onView(withId(R.id.title))
                 .check(matches(withText(title)))
 
         onView(withId(R.id.movie_description))

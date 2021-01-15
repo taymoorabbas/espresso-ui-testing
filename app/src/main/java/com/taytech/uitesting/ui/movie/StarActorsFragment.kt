@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.taytech.uitesting.R
 import kotlinx.android.synthetic.main.fragment_star_actors.*
+import java.lang.StringBuilder
 
 class StarActorsFragment : Fragment(){
 
@@ -46,6 +47,7 @@ class StarActorsFragment : Fragment(){
             return sb.toString()
         }
     }
+
 }
 
 

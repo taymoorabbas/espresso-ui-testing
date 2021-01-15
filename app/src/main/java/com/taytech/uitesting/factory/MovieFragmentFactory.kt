@@ -5,28 +5,37 @@ import com.bumptech.glide.request.RequestOptions
 import com.taytech.uitesting.data.source.MoviesDataSource
 import com.taytech.uitesting.ui.movie.DirectorsFragment
 import com.taytech.uitesting.ui.movie.MovieDetailFragment
+import com.taytech.uitesting.ui.movie.MovieListFragment
 import com.taytech.uitesting.ui.movie.StarActorsFragment
 
 class MovieFragmentFactory(
     private val requestOptions: RequestOptions? = null,
     private val moviesDataSource: MoviesDataSource? = null
-) : FragmentFactory() {
+) : FragmentFactory(){
 
     private val TAG: String = "AppDebug"
 
     override fun instantiate(classLoader: ClassLoader, className: String) =
 
-        when (className) {
+        when(className){
+
+            MovieListFragment::class.java.name -> {
+                if (moviesDataSource != null) {
+                    MovieListFragment(moviesDataSource)
+                } else {
+                    super.instantiate(classLoader, className)
+                }
+            }
 
             MovieDetailFragment::class.java.name -> {
-                if (requestOptions != null
-                    && moviesDataSource != null
-                ) {
+                if(requestOptions != null
+                    && moviesDataSource != null){
                     MovieDetailFragment(
                         requestOptions,
                         moviesDataSource
                     )
-                } else {
+                }
+                else{
                     super.instantiate(classLoader, className)
                 }
             }
@@ -43,6 +52,7 @@ class MovieFragmentFactory(
                 super.instantiate(classLoader, className)
             }
         }
+
 }
 
 

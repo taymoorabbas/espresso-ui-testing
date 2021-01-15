@@ -19,6 +19,8 @@ constructor(
     val moviesDataSource: MoviesDataSource
 ): Fragment(){
 
+    private val TAG: String = "AppDebug"
+
     private lateinit var movie: Movie
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,7 +66,7 @@ constructor(
     }
 
     private fun setMovieDetails(){
-        Glide.with(this)
+        Glide.with(this@MovieDetailFragment)
             .applyDefaultRequestOptions(requestOptions)
             .load(movie.image)
             .into(movie_image)
